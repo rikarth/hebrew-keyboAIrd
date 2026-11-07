@@ -2,12 +2,12 @@
 
 @layer utilities {
   .font-hebrew-handwriting {
-    font-family: 'Gveret Levin', 'Playpen Sans', 'Caveat', 'Amatic SC', cursive, sans-serif;
+    font-family: 'Gveret Levin', 'Playpen Sans', 'Caveat', 'Amatic SC', cursive, 'Segoe Print', sans-serif;
   }
   .font-hebrew-serif {
-    font-family: 'Frank Ruhl Libre', 'David Libre', Georgia, serif;
+    font-family: 'Frank Ruhl Libre', 'David Libre', 'David', 'FrankRuehl', 'Narkisim', Georgia, 'Times New Roman', serif;
   }
   .font-hebrew-sans {
-    font-family: 'Assistant', 'Heebo', system-ui, sans-serif;
+    font-family: 'Assistant', 'Heebo', 'Arial Hebrew', 'Segoe UI', Arial, system-ui, sans-serif;
   }
 }

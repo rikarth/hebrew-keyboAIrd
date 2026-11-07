@@ -9,21 +9,61 @@ import { PHYSICAL_KEY_MAP } from './keyboardMapping';
 import { insertTextAtCursor, backspaceAtCursor, deleteAtCursor } from './utils/text';
 import { playKeyClickSound } from './utils/audio';
 
+// Utilitats d'emmagatzematge segur (per a file:// i navegadors locals)
+const STORAGE_KEYS = {
+  TEXT: 'hebrew_keyboard_text',
+  THEME: 'hebrew_keyboard_theme',
+  FONT: 'hebrew_keyboard_font',
+  FONT_SIZE: 'hebrew_keyboard_font_size',
+  SOUND: 'hebrew_keyboard_sound',
+  PHYSICAL_KB: 'hebrew_keyboard_physical_enabled',
+};
+
+function getSavedItem<T>(key: string, fallback: T): T {
+  try {
+    const val = localStorage.getItem(key);
+    if (val !== null) return JSON.parse(val) as T;
+  } catch {
+    // En cas de restriccions de seguretat en sandbox file://
+  }
+  return fallback;
+}
+
+function setSavedItem<T>(key: string, val: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch {
+    // Ignorar errors de quota o accés
+  }
+}
+
 export default function App() {
+  const initialText = getSavedItem<string>(STORAGE_KEYS.TEXT, 'שָׁלוֹם עֲלֵיכֶם');
+
   // Historial i estat del text
-  const [text, setTextState] = useState<string>('שָׁלוֹם עֲלֵיכֶם'); // Text inicial de benvinguda en hebreu amb niqudot ("Shalom Aleichem")
-  const [history, setHistory] = useState<string[]>(['שָׁלוֹם עֲלֵיכֶם']);
+  const [text, setTextState] = useState<string>(initialText);
+  const [history, setHistory] = useState<string[]>([initialText]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
 
   // Referència a la casella de text
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Configuració global
-  const [physicalKeyboardEnabled, setPhysicalKeyboardEnabled] = useState<boolean>(true);
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
-  const [theme, setTheme] = useState<NotebookTheme>('classic');
-  const [font, setFont] = useState<NotebookFont>('serif');
-  const [fontSize, setFontSize] = useState<number>(22);
+  // Configuració global persistida
+  const [physicalKeyboardEnabled, setPhysicalKeyboardEnabled] = useState<boolean>(() =>
+    getSavedItem<boolean>(STORAGE_KEYS.PHYSICAL_KB, true)
+  );
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() =>
+    getSavedItem<boolean>(STORAGE_KEYS.SOUND, true)
+  );
+  const [theme, setTheme] = useState<NotebookTheme>(() =>
+    getSavedItem<NotebookTheme>(STORAGE_KEYS.THEME, 'classic')
+  );
+  const [font, setFont] = useState<NotebookFont>(() =>
+    getSavedItem<NotebookFont>(STORAGE_KEYS.FONT, 'serif')
+  );
+  const [fontSize, setFontSize] = useState<number>(() =>
+    getSavedItem<number>(STORAGE_KEYS.FONT_SIZE, 22)
+  );
 
   // Modals
   const [isMappingModalOpen, setIsMappingModalOpen] = useState<boolean>(false);
@@ -31,6 +71,31 @@ export default function App() {
 
   // Caràcter prems al teclat físic per a l'efecte visual en el teclat virtual
   const [activePhysicalChar, setActivePhysicalChar] = useState<string | null>(null);
+
+  // Persistència automàtica d'estats per a sessions locals
+  useEffect(() => {
+    setSavedItem(STORAGE_KEYS.TEXT, text);
+  }, [text]);
+
+  useEffect(() => {
+    setSavedItem(STORAGE_KEYS.THEME, theme);
+  }, [theme]);
+
+  useEffect(() => {
+    setSavedItem(STORAGE_KEYS.FONT, font);
+  }, [font]);
+
+  useEffect(() => {
+    setSavedItem(STORAGE_KEYS.FONT_SIZE, fontSize);
+  }, [fontSize]);
+
+  useEffect(() => {
+    setSavedItem(STORAGE_KEYS.SOUND, soundEnabled);
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    setSavedItem(STORAGE_KEYS.PHYSICAL_KB, physicalKeyboardEnabled);
+  }, [physicalKeyboardEnabled]);
 
   // Actualització de text amb registre d'historial (Undo / Redo)
   const updateTextAndHistory = useCallback((newText: string) => {
