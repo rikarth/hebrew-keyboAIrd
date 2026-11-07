@@ -27,22 +27,40 @@ import {
 interface VirtualKeyboardProps {
   onKeyClick: (payload: KeyClickPayload) => void;
   activePhysicalChar?: string | null;
+  keyMap?: Record<string, string>;
 }
 
 export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
   onKeyClick,
   activePhysicalChar,
+  keyMap,
 }) => {
   const [activeTab, setActiveTab] = useState<KeyboardTab>('layout');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Mapa invertit de caràcter hebreu a tecla física assignada
+  const charToKey = React.useMemo(() => {
+    if (!keyMap) return {};
+    const map: Record<string, string> = {};
+    for (const [k, c] of Object.entries(keyMap)) {
+      const charStr = String(c);
+      if (!map[charStr]) {
+        map[charStr] = k;
+      }
+    }
+    return map;
+  }, [keyMap]);
 
   // Maneig de clic en tecles
   const handleKeyClick = (char: string, type?: string) => {
     onKeyClick({ char, type: type as KeyboardKey['type'] });
   };
 
-  // Filtrar lletres
-  const filteredLetters = HEBREW_LETTERS.filter(
+  // Filtrar lletres amb tecla física dinàmica
+  const filteredLetters = HEBREW_LETTERS.map((item) => ({
+    ...item,
+    physicalKey: charToKey[item.char] || item.physicalKey,
+  })).filter(
     (item) =>
       item.char.includes(searchQuery) ||
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -192,28 +210,34 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
 
           {/* Row 2: Top QWERTY Row */}
           <div className="flex items-center justify-center gap-1 overflow-x-auto no-scrollbar">
-            {VIRTUAL_KEYBOARD_LAYOUT.topRow.map((key) => (
-              <KeyButton
-                key={key.char + key.label}
-                item={{ char: key.char, label: key.label, sub: key.sub, type: 'letter' }}
-                onClick={handleKeyClick}
-                size="md"
-                active={activePhysicalChar === key.char}
-              />
-            ))}
+            {VIRTUAL_KEYBOARD_LAYOUT.topRow.map((key) => {
+              const currentSub = charToKey[key.char] ?? key.sub;
+              return (
+                <KeyButton
+                  key={key.char + key.label}
+                  item={{ char: key.char, label: key.char, sub: currentSub, type: 'letter' }}
+                  onClick={handleKeyClick}
+                  size="md"
+                  active={activePhysicalChar === key.char}
+                />
+              );
+            })}
           </div>
 
           {/* Row 3: Home QWERTY Row */}
           <div className="flex items-center justify-center gap-1 overflow-x-auto no-scrollbar">
-            {VIRTUAL_KEYBOARD_LAYOUT.homeRow.map((key) => (
-              <KeyButton
-                key={key.char + key.label}
-                item={{ char: key.char, label: key.label, sub: key.sub, type: 'letter' }}
-                onClick={handleKeyClick}
-                size="md"
-                active={activePhysicalChar === key.char}
-              />
-            ))}
+            {VIRTUAL_KEYBOARD_LAYOUT.homeRow.map((key) => {
+              const currentSub = charToKey[key.char] ?? key.sub;
+              return (
+                <KeyButton
+                  key={key.char + key.label}
+                  item={{ char: key.char, label: key.char, sub: currentSub, type: 'letter' }}
+                  onClick={handleKeyClick}
+                  size="md"
+                  active={activePhysicalChar === key.char}
+                />
+              );
+            })}
             <button
               onClick={() => handleKeyClick('\n', 'special')}
               className="px-3 h-12 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-amber-200 text-xs font-bold flex items-center gap-1 active:bg-amber-500 active:text-slate-950"
@@ -225,15 +249,18 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
 
           {/* Row 4: Bottom QWERTY Row */}
           <div className="flex items-center justify-center gap-1 overflow-x-auto no-scrollbar">
-            {VIRTUAL_KEYBOARD_LAYOUT.bottomRow.map((key) => (
-              <KeyButton
-                key={key.char + key.label}
-                item={{ char: key.char, label: key.label, sub: key.sub, type: 'letter' }}
-                onClick={handleKeyClick}
-                size="md"
-                active={activePhysicalChar === key.char}
-              />
-            ))}
+            {VIRTUAL_KEYBOARD_LAYOUT.bottomRow.map((key) => {
+              const currentSub = charToKey[key.char] ?? key.sub;
+              return (
+                <KeyButton
+                  key={key.char + key.label}
+                  item={{ char: key.char, label: key.char, sub: currentSub, type: 'letter' }}
+                  onClick={handleKeyClick}
+                  size="md"
+                  active={activePhysicalChar === key.char}
+                />
+              );
+            })}
           </div>
 
           {/* Row 5: Spacebar Row */}

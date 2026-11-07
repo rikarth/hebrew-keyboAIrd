@@ -5,7 +5,7 @@ import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { MappingModal } from './components/MappingModal';
 import { HelpModal } from './components/HelpModal';
 import { NotebookFont, NotebookTheme, KeyClickPayload } from './types';
-import { PHYSICAL_KEY_MAP } from './keyboardMapping';
+import { PHYSICAL_KEY_MAP, DEFAULT_ISRAELI_KEY_MAP } from './keyboardMapping';
 import { insertTextAtCursor, backspaceAtCursor, deleteAtCursor } from './utils/text';
 import { playKeyClickSound } from './utils/audio';
 
@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
   FONT_SIZE: 'hebrew_keyboard_font_size',
   SOUND: 'hebrew_keyboard_sound',
   PHYSICAL_KB: 'hebrew_keyboard_physical_enabled',
+  KEY_MAPPING: 'hebrew_keyboard_custom_mapping',
 };
 
 function getSavedItem<T>(key: string, fallback: T): T {
@@ -65,12 +66,24 @@ export default function App() {
     getSavedItem<number>(STORAGE_KEYS.FONT_SIZE, 22)
   );
 
+  // Mapeig interactiu de tecles físiques a hebreu (desat al navegador)
+  const [keyMap, setKeyMap] = useState<Record<string, string>>(() =>
+    getSavedItem<Record<string, string>>(STORAGE_KEYS.KEY_MAPPING, PHYSICAL_KEY_MAP)
+  );
+
   // Modals
   const [isMappingModalOpen, setIsMappingModalOpen] = useState<boolean>(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
 
   // Caràcter prems al teclat físic per a l'efecte visual en el teclat virtual
   const [activePhysicalChar, setActivePhysicalChar] = useState<string | null>(null);
+
+  // Restablir mapeig de tecles
+  const handleResetKeyMap = useCallback(() => {
+    const defaultMap = { ...DEFAULT_ISRAELI_KEY_MAP };
+    setKeyMap(defaultMap);
+    setSavedItem(STORAGE_KEYS.KEY_MAPPING, defaultMap);
+  }, []);
 
   // Persistència automàtica d'estats per a sessions locals
   useEffect(() => {
@@ -96,6 +109,10 @@ export default function App() {
   useEffect(() => {
     setSavedItem(STORAGE_KEYS.PHYSICAL_KB, physicalKeyboardEnabled);
   }, [physicalKeyboardEnabled]);
+
+  useEffect(() => {
+    setSavedItem(STORAGE_KEYS.KEY_MAPPING, keyMap);
+  }, [keyMap]);
 
   // Actualització de text amb registre d'historial (Undo / Redo)
   const updateTextAndHistory = useCallback((newText: string) => {
@@ -194,10 +211,10 @@ export default function App() {
 
       const key = e.key.toLowerCase();
 
-      // Comprovar si la tecla té un mapeig hebreu assignat
-      if (PHYSICAL_KEY_MAP[key]) {
+      // Comprovar si la tecla té un mapeig hebreu assignat en la configuració activa
+      if (keyMap[key]) {
         e.preventDefault();
-        const mappedChar = PHYSICAL_KEY_MAP[key];
+        const mappedChar = keyMap[key];
 
         setActivePhysicalChar(mappedChar);
         setTimeout(() => setActivePhysicalChar(null), 200);
@@ -208,7 +225,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [physicalKeyboardEnabled, handleKeyClick]);
+  }, [physicalKeyboardEnabled, keyMap, handleKeyClick]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500/30">
@@ -254,6 +271,7 @@ export default function App() {
           <VirtualKeyboard
             onKeyClick={handleKeyClick}
             activePhysicalChar={activePhysicalChar}
+            keyMap={keyMap}
           />
         </section>
       </main>
@@ -267,6 +285,9 @@ export default function App() {
       <MappingModal
         isOpen={isMappingModalOpen}
         onClose={() => setIsMappingModalOpen(false)}
+        keyMap={keyMap}
+        onUpdateKeyMap={setKeyMap}
+        onResetKeyMap={handleResetKeyMap}
       />
 
       <HelpModal

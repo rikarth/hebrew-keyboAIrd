@@ -29,7 +29,7 @@ export interface KeyboardKey {
  * 1. MAPEIG DE TECLES FÍSIQUES QWERTY A LLETRES HEBREES (LAYOUT ISRAELIÀ ESTÀNDARD)
  * Tecla del teclat QWERTY (en minúscula) -> Caràcter Hebreu
  */
-export const PHYSICAL_KEY_MAP: Record<string, string> = {
+export const DEFAULT_ISRAELI_KEY_MAP: Record<string, string> = {
   // Fila superior (QWERTY)
   'q': '/',
   'w': '׳',
@@ -67,6 +67,45 @@ export const PHYSICAL_KEY_MAP: Record<string, string> = {
   '.': 'ת',
   '/': '?',
 };
+
+/**
+ * 1.2 MAPEIG FONÈTIC ALTERNATIU (PER A USUARIS AMB TECLAT LLATÍ)
+ */
+export const PHONETIC_KEY_MAP: Record<string, string> = {
+  'a': 'א', // Alef
+  'b': 'ב', // Bet
+  'v': 'ב', // Vet
+  'g': 'ג', // Gimel
+  'd': 'ד', // Dalet
+  'h': 'ה', // Hei
+  'u': 'ו', // Vav (vocal)
+  'w': 'ש', // Shin / Sin
+  'z': 'ז', // Zayin
+  'j': 'ח', // Het
+  'y': 'י', // Yod
+  'k': 'כ', // Kaf
+  'l': 'ל', // Lamed
+  'm': 'מ', // Mem
+  'n': 'נ', // Nun
+  's': 'ס', // Samekh
+  'e': 'ע', // Ayin
+  'p': 'פ', // Pei
+  'f': 'ף', // Fei final
+  'c': 'צ', // Tsadi
+  'q': 'ק', // Qof
+  'r': 'ר', // Resh
+  't': 'ת', // Tav
+  'x': 'ץ', // Tsadi final
+  'o': 'ם', // Mem final
+  'i': 'ן', // Nun final
+  ';': 'ך', // Khaf final
+  '\'': '׳', // Geresh
+};
+
+/**
+ * Mapeig inicial per defecte (Israelià estàndard)
+ */
+export const PHYSICAL_KEY_MAP: Record<string, string> = { ...DEFAULT_ISRAELI_KEY_MAP };
 
 /**
  * 2. LLETRES HEBREES (LLETRES I FORMES FINALS - SOFFIT)
