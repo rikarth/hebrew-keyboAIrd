@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-hebrew-handwriting {
+    font-family: 'Gveret Levin', 'Playpen Sans', 'Caveat', 'Amatic SC', cursive, sans-serif;
+  }
+  .font-hebrew-serif {
+    font-family: 'Frank Ruhl Libre', 'David Libre', Georgia, serif;
+  }
+  .font-hebrew-sans {
+    font-family: 'Assistant', 'Heebo', system-ui, sans-serif;
+  }
+}

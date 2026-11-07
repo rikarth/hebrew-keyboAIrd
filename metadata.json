@@ -1,0 +1,6 @@
+{
+  "name": "Teclat Hebreu Virtual",
+  "description": "Teclat virtual hebreu amb lletres, niqudot i puntuació, llibreta de notes bidi i suport per a file://",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
