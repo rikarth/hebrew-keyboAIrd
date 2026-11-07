@@ -55,25 +55,33 @@ export const MappingModal: React.FC<MappingModalProps> = ({
   // Pestanya de caràcters ràpids per al selector
   const [charPickerTab, setCharPickerTab] = useState<'letters' | 'niqqud' | 'punctuation'>('letters');
 
-  // Mapeig ordenat alfabèticament per tecla física
+  // Mapeig ordenat per tecla física (agrupant minúscules i majúscules correlatives, ex: m i M)
   const sortedMappings = useMemo(() => {
-    return Object.entries(keyMap).sort(([a], [b]) => a.localeCompare(b));
+    return Object.entries(keyMap).sort(([a], [b]) => {
+      const cmp = a.toLowerCase().localeCompare(b.toLowerCase());
+      if (cmp !== 0) return cmp;
+      return a.localeCompare(b);
+    });
   }, [keyMap]);
 
   // Codi font TypeScript generat dinàmicament en temps real amb tots els canvis
   const mappingCodeSnippet = useMemo(() => {
-    // Generar objecte ordenat
+    // Generar objecte ordenat amb majúscules i minúscules correlatives
+    const sortedKeys = Object.keys(keyMap).sort((a, b) => {
+      const cmp = a.toLowerCase().localeCompare(b.toLowerCase());
+      if (cmp !== 0) return cmp;
+      return a.localeCompare(b);
+    });
     const sortedObj: Record<string, string> = {};
-    Object.keys(keyMap)
-      .sort()
-      .forEach((k) => {
-        sortedObj[k] = keyMap[k];
-      });
+    sortedKeys.forEach((k) => {
+      sortedObj[k] = keyMap[k];
+    });
 
     return `/**
  * ARCHIU DE MAPEIG DEL TECLAT HEBREU PERSONALITZAT
  * ================================================
  * Generat automàticament des de la configuració interactiva del Teclat Hebreu.
+ * Suporta distinció entre majúscules i minúscules (ex: 'm' vs 'M').
  * Pots desar aquest fitxer a: /src/keyboardMapping.ts
  *
  * Total de tecles configurades: ${Object.keys(sortedObj).length}
@@ -118,10 +126,10 @@ export const PHYSICAL_KEY_MAP: Record<string, string> = ${JSON.stringify(sortedO
     setTimeout(() => setDownloaded(false), 2000);
   };
 
-  // Desa o actualitza una tecla al mapa
+  // Desa o actualitza una tecla al mapa (preservant majúscules i minúscules)
   const handleSaveKeyMapping = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const cleanKey = selectedPhysicalKey.trim().toLowerCase();
+    const cleanKey = selectedPhysicalKey.trim();
     const cleanChar = selectedChar.trim();
 
     if (!cleanKey) {
@@ -136,8 +144,9 @@ export const PHYSICAL_KEY_MAP: Record<string, string> = ${JSON.stringify(sortedO
     const updated = { ...keyMap, [cleanKey]: cleanChar };
     onUpdateKeyMap(updated);
 
-    setEditSuccessMsg(`Assignat [${cleanKey.toUpperCase()}] → ${cleanChar}`);
-    setTimeout(() => setEditSuccessMsg(null), 2500);
+    const isUpper = cleanKey >= 'A' && cleanKey <= 'Z';
+    setEditSuccessMsg(`Assignat [${cleanKey}] ${isUpper ? '(Majúscula / Shift)' : '(Minúscula)'} → ${cleanChar}`);
+    setTimeout(() => setEditSuccessMsg(null), 3000);
 
     // Netejar camps
     setSelectedPhysicalKey('');
@@ -155,39 +164,46 @@ export const PHYSICAL_KEY_MAP: Record<string, string> = ${JSON.stringify(sortedO
   const handleApplyPreset = (preset: 'israeli' | 'phonetic') => {
     if (preset === 'israeli') {
       onUpdateKeyMap({ ...DEFAULT_ISRAELI_KEY_MAP });
-      setEditSuccessMsg('S\'ha aplicat la disposició israeliana estàndard (QWERTY)');
+      setEditSuccessMsg('S\'ha aplicat la disposició israeliana estàndard (amb suport de majúscules per a formes finals)');
     } else {
       onUpdateKeyMap({ ...PHONETIC_KEY_MAP });
-      setEditSuccessMsg('S\'ha aplicat la disposició fonètica');
+      setEditSuccessMsg('S\'ha aplicat la disposició fonètica (ex: m → מ, M → ם)');
     }
-    setTimeout(() => setEditSuccessMsg(null), 2500);
+    setTimeout(() => setEditSuccessMsg(null), 3000);
   };
 
-  // Maneig de teclat físic a la prova
+  // Maneig de teclat físic a la prova amb distinció majúscules/minúscules
   const handleTestKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (['Tab', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
+    if (e.key === 'Shift') return;
     e.preventDefault();
-    const key = e.key.toLowerCase();
+
+    const key = e.key;
     setTestKey(key);
-    if (keyMap[key]) {
-      setTestResult(keyMap[key]);
+
+    const mapped = keyMap[key] ?? (e.shiftKey ? undefined : keyMap[key.toLowerCase()]);
+    if (mapped) {
+      setTestResult(mapped);
     } else {
-      setTestResult('Sense mapeig (escriu la tecla sense canvis)');
+      setTestResult('Sense mapeig assignat (escriu la tecla directa)');
     }
   };
 
-  // Capturar tecla física en el formulari d'assignació
+  // Capturar tecla física en el formulari d'assignació (exactament com es prem)
   const handleCapturePhysicalKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Tab') return;
+    if (['Tab', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
+    if (e.key === 'Shift') return;
     e.preventDefault();
-    const key = e.key.toLowerCase();
-    setSelectedPhysicalKey(key);
+
+    // Guardar exactament la tecla premuda (ex: 'm' o 'M')
+    setSelectedPhysicalKey(e.key);
   };
 
   // Filtrar la llista
   const filteredMappings = sortedMappings.filter(([k, c]) => {
     if (!searchFilter) return true;
     const q = searchFilter.toLowerCase();
-    return k.toLowerCase().includes(q) || c.includes(q);
+    return k.toLowerCase().includes(q) || c.includes(searchFilter) || k.includes(searchFilter);
   });
 
   return (
@@ -280,15 +296,26 @@ export const PHYSICAL_KEY_MAP: Record<string, string> = ${JSON.stringify(sortedO
             <form onSubmit={handleSaveKeyMapping} className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
               {/* Physical Key Input */}
               <div className="flex-1 space-y-1.5">
-                <label className="block text-slate-300 font-medium text-xs">
-                  Tecla Física (QWERTY / Teclat)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-300 font-medium text-xs">
+                    Tecla Física (QWERTY / Teclat)
+                  </label>
+                  {selectedPhysicalKey && (
+                    <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                      selectedPhysicalKey >= 'A' && selectedPhysicalKey <= 'Z' 
+                        ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-700/50' 
+                        : 'text-slate-400'
+                    }`}>
+                      {selectedPhysicalKey >= 'A' && selectedPhysicalKey <= 'Z' ? 'Majúscula (Shift)' : 'Minúscula'}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
-                  placeholder="Prem una tecla (ex: t, k, ;)"
+                  placeholder="Prem una tecla (ex: m per a מ o M per a ם)"
                   value={selectedPhysicalKey}
                   onKeyDown={handleCapturePhysicalKey}
-                  onChange={(e) => setSelectedPhysicalKey(e.target.value.slice(-1).toLowerCase())}
+                  onChange={(e) => setSelectedPhysicalKey(e.target.value.slice(-1))}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-slate-100 font-mono text-center font-bold text-base focus:border-amber-500 focus:outline-none"
                 />
               </div>
@@ -430,9 +457,19 @@ export const PHYSICAL_KEY_MAP: Record<string, string> = ${JSON.stringify(sortedO
                 className="w-full sm:w-auto flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 font-mono text-center focus:border-emerald-500 focus:outline-none"
               />
               {testKey && (
-                <div className="flex items-center gap-3 bg-slate-900 px-4 py-2 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-2.5 bg-slate-900 px-4 py-2 rounded-xl border border-slate-800">
                   <span className="text-slate-400">Tecla:</span>
-                  <span className="font-mono text-amber-400 font-bold uppercase">[{testKey}]</span>
+                  <span className="font-mono text-amber-400 font-bold">[{testKey}]</span>
+                  {testKey >= 'A' && testKey <= 'Z' && (
+                    <span className="text-[10px] bg-indigo-950/80 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-700/50">
+                      Majúscula / Shift
+                    </span>
+                  )}
+                  {testKey >= 'a' && testKey <= 'z' && (
+                    <span className="text-[10px] text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                      Minúscula
+                    </span>
+                  )}
                   <span className="text-slate-500">→</span>
                   <span className="text-xl font-bold text-emerald-400 font-serif">{testResult}</span>
                 </div>
@@ -443,10 +480,15 @@ export const PHYSICAL_KEY_MAP: Record<string, string> = ${JSON.stringify(sortedO
           {/* Active Mappings Grid Overview */}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Tecles Mapejades Actuals ({filteredMappings.length})</span>
-              </h3>
+              <div>
+                <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>Tecles Mapejades Actuals ({filteredMappings.length})</span>
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Distingeix majúscules i minúscules (ex: <code className="text-amber-300 font-mono">[m]</code> vs <code className="text-amber-300 font-mono">[M]</code>)
+                </p>
+              </div>
 
               {/* Search filter for mapped keys */}
               <div className="relative w-full sm:w-60">
@@ -467,10 +509,20 @@ export const PHYSICAL_KEY_MAP: Record<string, string> = ${JSON.stringify(sortedO
                   key={key}
                   className="group flex items-center justify-between bg-slate-900/90 hover:bg-slate-850 px-2.5 py-1.5 rounded-lg border border-slate-800/80 transition"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400 uppercase font-semibold text-xs">[{key}]</span>
-                    <span className="text-slate-600">→</span>
-                    <span className="text-amber-400 font-bold text-base font-serif">{char}</span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-amber-300 font-mono font-bold text-xs shrink-0">[{key}]</span>
+                    {key >= 'A' && key <= 'Z' && (
+                      <span className="text-[9px] bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 px-1 py-0.2 rounded font-sans font-semibold shrink-0">
+                        Shift
+                      </span>
+                    )}
+                    {key >= 'a' && key <= 'z' && (
+                      <span className="text-[9px] text-slate-500 font-sans shrink-0">
+                        min
+                      </span>
+                    )}
+                    <span className="text-slate-600 shrink-0">→</span>
+                    <span className="text-amber-400 font-bold text-base font-serif truncate">{char}</span>
                   </div>
 
                   <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">

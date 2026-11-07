@@ -42,7 +42,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 <strong>Teclat Virtual:</strong> Fes clic a qualsevol lletra, signe o niqudot del teclat virtual per afegir-lo exactament a la posició del cursor de la llibreta.
               </li>
               <li>
-                <strong>Teclat Físic:</strong> Si actives l'opció "Teclat Físic: Actiu", en prémer les tecles del teu teclat QWERTY s'escriuran directament les lletres hebrees equivalents (layout israelià estàndard).
+                <strong>Teclat Físic:</strong> Si actives l'opció "Teclat Físic: Actiu", en prémer les tecles del teu teclat QWERTY s'escriuran directament les lletres hebrees equivalents. El mapeig distingeix entre majúscules i minúscules (ex: <code className="text-amber-400 font-mono">m</code> escriu <span className="font-serif font-bold text-amber-300">מ</span> i <code className="text-amber-400 font-mono">M</code> o Shift+m pot escriure la forma final <span className="font-serif font-bold text-amber-300">ם</span>).
               </li>
             </ul>
           </div>

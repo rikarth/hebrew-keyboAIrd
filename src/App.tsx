@@ -206,15 +206,18 @@ export default function App() {
         return;
       }
 
-      // No interceptar tecles amb Ctrl/Alt/Meta
+      // No interceptar tecles de control del sistema
       if (e.ctrlKey || e.altKey || e.metaKey) return;
 
-      const key = e.key.toLowerCase();
+      // Suport exacte per a majúscules i minúscules (ex: 'm' vs 'M')
+      const key = e.key;
 
-      // Comprovar si la tecla té un mapeig hebreu assignat en la configuració activa
-      if (keyMap[key]) {
+      // Comprovar primer el mapeig exacte amb distinció de majúscules/minúscules
+      // Si no hi ha mapeig de majúscula específic i no és Shift actiu, permetre fallback de minúscula (ex: bloqueig de majúscules)
+      const mappedChar = keyMap[key] ?? (e.shiftKey ? undefined : keyMap[key.toLowerCase()]);
+
+      if (mappedChar) {
         e.preventDefault();
-        const mappedChar = keyMap[key];
 
         setActivePhysicalChar(mappedChar);
         setTimeout(() => setActivePhysicalChar(null), 200);

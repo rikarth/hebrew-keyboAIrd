@@ -66,9 +66,9 @@ export const KeyButton: React.FC<KeyButtonProps> = ({
       }`}
       title={name ? `${name}${description ? ` — ${description}` : ''}` : item.label}
     >
-      {/* Sub-etiqueta (tecla QWERTY o nom curt) */}
+      {/* Sub-etiqueta (tecla QWERTY o nom curt, preservant majúscules i minúscules) */}
       {sub && (
-        <span className="text-[10px] uppercase font-mono tracking-tighter opacity-50 group-hover:opacity-90 transition leading-none self-end pr-1 pt-0.5">
+        <span className="text-[10px] font-mono tracking-tighter opacity-60 group-hover:opacity-100 transition leading-none self-end pr-1 pt-0.5">
           {sub}
         </span>
       )}
